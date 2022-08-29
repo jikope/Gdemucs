@@ -77,7 +77,7 @@ def get_solver(args, model_only=False):
     if model_only:
         return Solver(None, model, optimizer, args)
 
-    train_set, valid_set = get_musdb_wav_datasets(args.dset)
+    train_set, valid_set = get_wav_datasets(args.dset)
     if args.dset.wav:
         extra_train_set, extra_valid_set = get_wav_datasets(args.dset)
         train_set = ConcatDataset([train_set, extra_train_set])

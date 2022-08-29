@@ -23,7 +23,7 @@ from torch.nn import functional as F
 from .audio import convert_audio_channels
 from . import distrib
 
-MIXTURE = "mixture"
+MIXTURE = "MIXTURE"
 EXT = ".wav"
 
 

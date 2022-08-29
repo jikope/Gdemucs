@@ -8,10 +8,10 @@ defaults:
 
 dummy:
 dset:
-  musdb: /checkpoint/defossez/datasets/musdbhq
+  musdb: 
   musdb_samplerate: 44100
-  wav:  # path to custom wav dataset
-  segment: 11
+  wav:  /content/SORAN_DATASET
+  segment: 8
   shift: 1
   train_valid: false
   full_cv: true
@@ -19,13 +19,13 @@ dset:
   channels: 2
   normalize: true
   metadata: ./metadata
-  sources: ['drums', 'bass', 'other', 'vocals']
+  sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
 
 test:
   save: False
   best: True
   workers: 2
-  every: 20
+  every: 5
   split: true
   shifts: 1
   overlap: 0.25
@@ -33,8 +33,8 @@ test:
   metric: 'loss'  # metric used for best model selection on the valid set, can also be nsdr
   nonhq:   # path to non hq MusDB for evaluation
 
-epochs: 360
-batch_size: 64
+epochs: 20
+batch_size: 4
 max_batches:  # limit the number of batches per epoch, useful for debugging
               # or if your dataset is gigantic.
 optim:

@@ -1,0 +1,62 @@
+# @package _global_
+
+# SORAN DATASET
+dset:
+  wav: /content/SORAN_DATASET
+  samplerate: 44100
+  channels: 2
+  segment: 8
+  sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
+
+model: hdemucs
+hdemucs:
+  channels: 32
+
+misc:
+  num_workers: 0
+
+test:
+  save: False
+  best: True
+  workers: 0
+  every: 10
+
+#augment:
+#  shift_same: false
+#  repitch:
+#    proba: 0
+#    max_tempo: 0
+#  remix:
+#    proba: 0
+#    group_size: 0
+#  scale:
+#    proba: 0
+#    min: 0
+#    max: 0
+#  flip: false
+
+augment:
+  shift_same: false
+  repitch:
+    proba: 0.2
+    max_tempo: 12
+  remix:
+    proba: 1
+    group_size: 4
+  scale:
+    proba: 1
+    min: 0.25
+    max: 1.25
+  flip: true
+
+epochs: 20
+batch_size: 4
+weights: [1., 1., 1., 1., 1., 1.]
+save_every: 1
+
+# Hydra config
+hydra:
+  job_logging:
+    formatters:
+      colorlog:
+        datefmt: "%m-%d %H:%M:%S"
