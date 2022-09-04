@@ -12,11 +12,14 @@ be reported as `nsdr` for `new sdr`).
 from concurrent import futures
 import logging
 
+import os
+from pathlib import Path
 from dora.log import LogProgress
 import numpy as np
 import musdb
 import museval
 import torch as th
+import torchaudio as ta
 
 from .apply import apply_model
 from .audio import convert_audio, save_audio
@@ -77,13 +80,21 @@ def evaluate(solver, compute_sdr=False):
     json_folder = solver.folder / "results/test"
     json_folder.mkdir(exist_ok=True, parents=True)
 
-    # we load tracks from the original musdb set
-    if args.test.nonhq is None:
-        test_set = musdb.DB(args.dset.musdb, subsets=["test"], is_wav=True)
-    else:
-        test_set = musdb.DB(args.test.nonhq, subsets=["test"], is_wav=False)
-    src_rate = args.dset.musdb_samplerate
+    src_rate = args.dset.samplerate
 
+    # Load custom set
+    TEST_FOLDER = '/content/SORAN_DATASET/test'
+    test_path = Path(TEST_FOLDER)
+
+    test_set = []
+
+    for root, folders, files in os.walk(test_path, followlinks=True):
+        root = Path(root)
+        if root.name.startswith('.') or folders or root == test_path:
+            continue
+        name = str(root.relative_to(test_path))
+        test_set.append(name)    
+        
     eval_device = 'cpu'
 
     model = solver.model
@@ -97,12 +108,8 @@ def evaluate(solver, compute_sdr=False):
 
     pool = futures.ProcessPoolExecutor if args.test.workers else DummyPoolExecutor
     with pool(args.test.workers) as pool:
-        for index in indexes:
-            track = test_set.tracks[index]
-
-            mix = th.from_numpy(track.audio).t().float()
-            if mix.dim() == 1:
-                mix = mix[None]
+        for name in test_set:
+            mix, _ = ta.load(test_path / name / 'MIXTURE.wav')
             mix = mix.to(solver.device)
             ref = mix.mean(dim=0)  # mono mixture
             mix = (mix - ref.mean()) / ref.std()
@@ -114,19 +121,19 @@ def evaluate(solver, compute_sdr=False):
             estimates = estimates.to(eval_device)
 
             references = th.stack(
-                [th.from_numpy(track.targets[name].audio).t() for name in model.sources])
+                [ta.load(test_path / name / (source + '.wav'))[0] for source in model.sources])
             if references.dim() == 2:
                 references = references[:, None]
-            references = references.to(eval_device)
-            references = convert_audio(references, src_rate,
-                                       model.samplerate, model.audio_channels)
+                references = references.to(eval_device)
+                references = convert_audio(references, src_rate,
+                                           model.samplerate, model.audio_channels)
             if args.test.save:
-                folder = solver.folder / "wav" / track.name
+                folder = solver.folder / "wav" / name
                 folder.mkdir(exist_ok=True, parents=True)
                 for name, estimate in zip(model.sources, estimates):
                     save_audio(estimate.cpu(), folder / (name + ".mp3"), model.samplerate)
 
-            pendings.append((track.name, pool.submit(
+            pendings.append((name, pool.submit(
                 eval_track, references, estimates, win=win, hop=hop, compute_sdr=compute_sdr)))
 
         pendings = LogProgress(logger, pendings, updates=args.misc.num_prints,
@@ -168,6 +175,6 @@ def evaluate(solver, compute_sdr=False):
                 result[metric_name.lower() + "_med" + "_" + source] = median
                 avg += mean / len(model.sources)
                 avg_of_medians += median / len(model.sources)
-            result[metric_name.lower()] = avg
-            result[metric_name.lower() + "_med"] = avg_of_medians
+                result[metric_name.lower()] = avg
+                result[metric_name.lower() + "_med"] = avg_of_medians
         return result
