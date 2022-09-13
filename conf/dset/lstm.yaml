@@ -8,18 +8,16 @@ dset:
   segment: 2
   sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
 
-model: demucs
-hdemucs:
-  channels: 24
+model: basiclstm
 
-demucs:
-  channels: 24
+basiclstm:
+    channels: 32
 
 misc:
   num_workers: 0
 
 test:
-  save: False
+  save: True
   best: True
   workers: 0
   every: 10

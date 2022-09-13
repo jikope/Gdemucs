@@ -22,6 +22,7 @@ from . import distrib
 from .wav import get_wav_datasets, get_musdb_wav_datasets
 from .demucs import Demucs
 from .hdemucs import HDemucs
+from .LSTM import BasicLSTM
 from .repitch import RepitchedWrapper
 from .solver import Solver
 
@@ -35,7 +36,7 @@ def get_model(args):
         'samplerate': args.dset.samplerate,
         'segment': args.model_segment or 4 * args.dset.segment,
     }
-    klass = {'demucs': Demucs, 'hdemucs': HDemucs}[args.model]
+    klass = {'demucs': Demucs, 'hdemucs': HDemucs, 'basiclstm': BasicLSTM}[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)
     return model

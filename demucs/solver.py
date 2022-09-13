@@ -303,7 +303,7 @@ class Solver(object):
         averager = EMA()
 
         for idx, sources in enumerate(logprog):
-            # logger.info(idx)
+            # logger.info(sources.shape)
             sources = sources.to(self.device)
             if train:
                 sources = self.augment(sources)
@@ -311,6 +311,10 @@ class Solver(object):
             else:
                 mix = sources[:, 0]
                 sources = sources[:, 1:]
+
+            # logger.info(f"{name}")
+            # logger.info(f"shape of mix {mix.shape}")
+            # logger.info(f"shape of sources {sources.shape}")
 
             if not train and self.args.valid_apply:
                 estimate = apply_model(self.model, mix, split=self.args.test.split, overlap=0)
@@ -320,6 +324,7 @@ class Solver(object):
                 sources = self.model.transform_target(mix, sources)
             assert estimate.shape == sources.shape, (estimate.shape, sources.shape)
             dims = tuple(range(2, sources.dim()))
+            # logger.info(f"estimate {estimate.shape}")
 
             if args.optim.loss == 'l1':
                 loss = F.l1_loss(estimate, sources, reduction='none')

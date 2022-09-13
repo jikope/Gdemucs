@@ -83,8 +83,8 @@ def evaluate(solver, compute_sdr=False):
     src_rate = args.dset.samplerate
 
     # Load custom set
-    TEST_FOLDER = '/content/SORAN_DATASET/test'
-    test_path = Path(TEST_FOLDER)
+    # TEST_FOLDER = args.dset.wav + 'test'
+    test_path = Path(args.dset.wav) / 'test'
 
     test_set = []
 
