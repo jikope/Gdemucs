@@ -8,35 +8,23 @@ dset:
   segment: 2
   sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
 
-model: hdemucs
-hdemucs:
-  channels: 32
+model: dprnn
 
-demucs:
-  channels: 24
+dprnn:
+  channels: 32
+  in_channels: 256
+  out_channels: 64
+  hidden_size: 128
+  bidirectional: True
 
 misc:
   num_workers: 0
 
 test:
-  save: False
+  save: True
   best: True
   workers: 0
   every: 10
-
-#augment:
-#  shift_same: false
-#  repitch:
-#    proba: 0
-#    max_tempo: 0
-#  remix:
-#    proba: 0
-#    group_size: 0
-#  scale:
-#    proba: 0
-#    min: 0
-#    max: 0
-#  flip: false
 
 augment:
   shift_same: false

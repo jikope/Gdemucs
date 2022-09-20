@@ -23,6 +23,8 @@ from .wav import get_wav_datasets, get_musdb_wav_datasets
 from .demucs import Demucs
 from .hdemucs import HDemucs
 from .LSTM import BasicLSTM
+from .DPRNN import DPRNN
+# from .umx import UMX
 from .repitch import RepitchedWrapper
 from .solver import Solver
 
@@ -36,7 +38,7 @@ def get_model(args):
         'samplerate': args.dset.samplerate,
         'segment': args.model_segment or 4 * args.dset.segment,
     }
-    klass = {'demucs': Demucs, 'hdemucs': HDemucs, 'basiclstm': BasicLSTM}[args.model]
+    klass = {'demucs': Demucs, 'hdemucs': HDemucs, 'basiclstm': BasicLSTM, 'dprnn': DPRNN, 'umx': UMX}[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)
     return model
@@ -79,10 +81,10 @@ def get_solver(args, model_only=False):
         return Solver(None, model, optimizer, args)
 
     train_set, valid_set = get_wav_datasets(args.dset)
-    if args.dset.wav:
-        extra_train_set, extra_valid_set = get_wav_datasets(args.dset)
-        train_set = ConcatDataset([train_set, extra_train_set])
-        valid_set = ConcatDataset([valid_set, extra_valid_set])
+    # if args.dset.wav:
+    #     extra_train_set, extra_valid_set = get_wav_datasets(args.dset)
+    #     train_set = ConcatDataset([train_set, extra_train_set])
+    #     valid_set = ConcatDataset([valid_set, extra_valid_set])
 
     if args.augment.repitch.proba:
         vocals = []
