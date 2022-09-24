@@ -8,9 +8,11 @@ dset:
   segment: 2
   sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
 
-model: basiclstm
+solver: spec
 
-basiclstm:
+model: umx
+
+umx:
   channels: 32
 
 misc:
@@ -40,9 +42,6 @@ epochs: 20
 batch_size: 4
 weights: [1., 1., 1., 1., 1., 1.]
 save_every: 1
-
-optim:
-  lr: 3e-4
 
 # Hydra config
 hydra:

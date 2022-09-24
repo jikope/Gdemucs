@@ -38,7 +38,7 @@ def get_model(args):
         'samplerate': args.dset.samplerate,
         'segment': args.model_segment or 4 * args.dset.segment,
     }
-    klass = {'demucs': Demucs, 'hdemucs': HDemucs, 'basiclstm': BasicLSTM, 'dprnn': DPRNN, 'umx': UMX}[args.model]
+    klass = {'demucs': Demucs, 'hdemucs': HDemucs, 'basiclstm': BasicLSTM, 'dprnn': DPRNN}[args.model]
     kw = OmegaConf.to_container(getattr(args, args.model), resolve=True)
     model = klass(**extra, **kw)
     return model

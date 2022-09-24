@@ -179,9 +179,9 @@ class DPRNNBlock(nn.Module):
 
         intra_out = intra_out + x
 
-        inter_out = self.inter_rnn(intra_out.permute(2, 0, 1))[0]
+        inter_out = self.inter_rnn(intra_out.permute(0, 2, 1))[0]
         inter_out = self.inter_fc(inter_out.contiguous())
-        inter_out = inter_out.permute(1, 2, 0)
+        inter_out = inter_out.permute(0, 2, 1)
         inter_out = layer_norm(inter_out)
 
         out = intra_out + inter_out
@@ -257,9 +257,6 @@ class DPRNN(nn.Module):
         # DPRNN Block
         self.dprnn_block = DPRNNBlock(chout)
 
-        self.lstm = LSTM(in_channels, hidden_size)
-        self.iLN = nn.LayerNorm(1, 3)  # dim = 2
-
     @staticmethod
     def _mask(m, z, niters):
         spec_type = z.dtype
@@ -287,10 +284,10 @@ class DPRNN(nn.Module):
     def forward(self, mix):
         x = mix
         length = x.shape[-1]
-        logger.info(f"input shape {mix.shape}")
+        # logger.info(f"input shape {mix.shape}")
 
         z = spectro(x, self.nfft, self.hop_length)[..., :-1, :]
-        logger.info(f"spectro shape {z.shape}")
+        # logger.info(f"spectro shape {z.shape}")
         x = z.abs()  # Magnitude spectrogram
 
         n_samples, n_channels, n_bins, n_frames = x.shape
@@ -313,15 +310,14 @@ class DPRNN(nn.Module):
         x = self.dprnn_block(x)
         # logger.info(f"after dprnn {x.shape}")
 
-        x = torch.zeros_like(x)
         for idx, decoder in enumerate(self.decoder):
             skip = saved.pop(-1)
             x = decoder(x, skip, lengths.pop(-1))
             # logger.info(f"after decoder {idx} {x.shape}")
 
-        ## logger.info(f"after decoder {x.shape}")
         n_sources = len(self.sources)
         x = x.view(n_samples, n_sources, -1, n_bins, n_frames)
+        x = x * std[:, None] + mean[:, None]
 
         zout = self._mask(x, z, self.wiener_iters)
 
@@ -336,5 +332,5 @@ class DPRNN(nn.Module):
 
 
 if __name__ == "__main__":
-    model = DPRNN(['BALUNGAN'])
+    model = DPRNN(['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM'])
     summary(model)
