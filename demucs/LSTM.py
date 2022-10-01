@@ -21,15 +21,14 @@ class BasicLSTM(nn.Module):
                  channels=48,
                  samplerate=44100,
                  segment=4 * 10,
+                 # CaC
+                 cac=False,
                  # Conv
                  kernel_size=8,
                  stride=4,
                  # STFT
                  nfft=4096,
                  # RNN
-                 in_channels=256,
-                 out_channels=64,
-                 hidden_size=128,
                  bidirectional=True,
                  # Masking
                  wiener_iters=0
@@ -41,6 +40,9 @@ class BasicLSTM(nn.Module):
         self.samplerate = samplerate
         self.segment = segment
         self.wiener_iters = wiener_iters
+
+        # CaC
+        self.cac = cac
 
         # Conv
         self.kernel_size = kernel_size
@@ -55,8 +57,12 @@ class BasicLSTM(nn.Module):
 
         chin = audio_channels
         chout = channels
+
+        if self.cac:
+            chin *= 2
+
         self.encoder.append(Encoder(chin, chout, norm=False))
-        self.decoder.insert(0, Decoder(chout, audio_channels * len(self.sources), norm=False, last=True))
+        self.decoder.insert(0, Decoder(chout, chin * len(self.sources), norm=False, last=True))
         chin = chout
         chout = chin * 2
         self.encoder.append(Encoder(chin, chout, norm=False))
@@ -82,7 +88,7 @@ class BasicLSTM(nn.Module):
         self.fc = nn.Linear(chout, out_features=chout)
 
     @staticmethod
-    def _mask(m, z, niters):
+    def wiener(z, m, niters):
         spec_type = z.dtype
         wiener_win_len = 300
 
@@ -105,6 +111,24 @@ class BasicLSTM(nn.Module):
         assert list(out.shape) == [n_samples, n_sources, n_channels, n_bins, n_frames]
         return out.to(spec_type)
 
+    def _magnitude(self, z):
+        if self.cac:
+            B, C, Fr, T = z.shape
+            mag = torch.view_as_real(z).permute(0, 1, 4, 2, 3)
+            mag = mag.reshape(B, C * 2, Fr, T)
+        else:
+            mag = z.abs()
+        return mag
+
+    def _mask(self, z, mag):
+        if self.cac:
+            B, S, C, Fr, T = mag.shape
+            out = mag.view(B, S, -1, 2, Fr, T).permute(0, 1, 2, 4, 5, 3)
+            out = torch.view_as_complex(out.contiguous())
+            return out
+        else:
+            return self.wiener(z, mag, self.wiener_iters)
+
     def forward(self, mix):
         x = mix
         length = x.shape[-1]
@@ -112,7 +136,7 @@ class BasicLSTM(nn.Module):
 
         z = spectro(x, self.nfft, self.hop_length)[..., :-1, :]
         # logger.info(f"spectro shape {z.shape}")
-        x = z.abs()  # Magnitude spectrogram
+        x = self._magnitude(z)  # Magnitude spectrogram or CaC
 
         n_samples, n_channels, n_bins, n_frames = x.shape
 
@@ -131,11 +155,10 @@ class BasicLSTM(nn.Module):
             saved.append(x)
             # logger.info(f"after encoder {idx} {x.shape}")
 
-        # TODO: Add LSTM Layer
-        layer_norm = nn.LayerNorm(x.shape[-1])
+        # layer_norm = nn.LayerNorm(x.shape[-1])
         lstm_out = self.lstm(x.permute(2, 0, 1))[0]
-        lstm_out = self.fc(lstm_out.contiguous())
-        lstm_out = layer_norm(lstm_out.permute(1, 2, 0))
+        lstm_out = self.fc(lstm_out.contiguous()).permute(1, 2, 0)
+        # lstm_out = layer_norm(lstm_out.permute(1, 2, 0))
 
         x = x + lstm_out
 
@@ -148,7 +171,7 @@ class BasicLSTM(nn.Module):
         x = x.view(n_samples, n_sources, -1, n_bins, n_frames)
         x = x * std[:, None] + mean[:, None]
 
-        zout = self._mask(x, z, self.wiener_iters)
+        zout = self._mask(z, x)
 
         # logger.info(f"mask {zout.shape}")
 

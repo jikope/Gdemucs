@@ -12,6 +12,7 @@ model: dprnn
 
 dprnn:
   channels: 32
+  cac: True
 
 misc:
   num_workers: 0

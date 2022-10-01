@@ -8,10 +8,11 @@ dset:
   segment: 2
   sources: ['BALUNGAN', 'BONANG_BARUNG', 'KENDHANG', 'KEMPUL_GONG', 'KETHUK_KENONG', 'SLENTHEM']
 
-model: dprnn
+model: basiclstm
 
-dprnn:
+basiclstm:
   channels: 32
+  cac: True
 
 misc:
   num_workers: 0
